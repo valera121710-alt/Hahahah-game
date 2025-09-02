@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Хамелеон за курсором</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: black;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        .chameleon-part {
+            position: absolute;
+            width: 20px;
+            height: 5px;
+            border-radius: 2px;
+            transition: transform 0.1s ease;
+        }
+
+        #cursor-follower {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="cursor-follower"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const follower = document.getElementById('cursor-follower');
+            const numParts = 10; // Количество полосок-хамелеона
+            const parts = [];
+
+            // Создаем части хамелеона
+            for (let i = 0; i < numParts; i++) {
+                let part = document.createElement('div');
+                part.className = 'chameleon-part';
+                part.style.backgroundColor = `hsl(${i * 36}, 100%, 50%)`; // Разные цвета
+                document.body.appendChild(part);
+                parts.push(part);
+            }
+
+            let mouseX = 0;
+            let mouseY = 0;
+
+            // Отслеживаем движение мыши
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                follower.style.left = `${mouseX}px`;
+                follower.style.top = `${mouseY}px`;
+            });
+
+            // Двигаем части хамелеона с задержкой
+            function moveParts() {
+                parts.forEach((part, index) => {
+                    let delay = index * 50; // Задержка для каждой части
+                    setTimeout(() => {
+                        part.style.left = `${mouseX - 10}px`;
+                        part.style.top = `${mouseY - 2.5}px`;
+                        part.style.transform = `rotate(${Math.atan2(mouseY - part.offsetTop, mouseX - part.offsetLeft)}rad)`;
+                    }, delay);
+                });
+                requestAnimationFrame(moveParts);
+            }
+
+            moveParts();
+
+            // При клике открываем сайт
+            follower.addEventListener('click', () => {
+                window.open('https://example.com', '_blank'); // Замени на свой URL
+            });
+        });
+    </script>
+</body>
+</html>
