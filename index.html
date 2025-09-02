@@ -3,82 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хамелеон за курсором</title>
+    <title>Хамелеон из полосок</title>
     <style>
         body {
             margin: 0;
             height: 100vh;
-            background: black;
+            background: #0a0a0a;
             overflow: hidden;
             cursor: none;
         }
 
-        .chameleon-part {
+        .segment {
             position: absolute;
-            width: 20px;
-            height: 5px;
-            border-radius: 2px;
-            transition: transform 0.1s ease;
+            width: 40px;
+            height: 15px;
+            border-radius: 8px;
+            transform-origin: center left;
+            transition: transform 0.2s ease-out;
         }
 
-        #cursor-follower {
+        #target {
             position: absolute;
-            width: 10px;
-            height: 10px;
+            width: 16px;
+            height: 16px;
             background: white;
             border-radius: 50%;
-            pointer-events: none;
             transform: translate(-50%, -50%);
+            pointer-events: none;
+            mix-blend-mode: difference;
         }
     </style>
 </head>
 <body>
-    <div id="cursor-follower"></div>
-
+    <div id="target"></div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const follower = document.getElementById('cursor-follower');
-            const numParts = 10; // Количество полосок-хамелеона
-            const parts = [];
+            const target = document.getElementById('target');
+            const segments = [];
+            const numSegments = 12; // Количество сегментов тела хамелеона
+            const colors = [];
 
-            // Создаем части хамелеона
-            for (let i = 0; i < numParts; i++) {
-                let part = document.createElement('div');
-                part.className = 'chameleon-part';
-                part.style.backgroundColor = `hsl(${i * 36}, 100%, 50%)`; // Разные цвета
-                document.body.appendChild(part);
-                parts.push(part);
+            // Генерация цветов от зелёного к жёлтому и синему
+            for (let i = 0; i < numSegments; i++) {
+                const hue = (120 + i * 15) % 360;
+                colors.push(`hsl(${hue}, 100%, 50%)`);
             }
 
-            let mouseX = 0;
-            let mouseY = 0;
+            // Создание сегментов
+            for (let i = 0; i < numSegments; i++) {
+                const seg = document.createElement('div');
+                seg.className = 'segment';
+                seg.style.backgroundColor = colors[i];
+                document.body.appendChild(seg);
+                segments.push(seg);
+            }
 
-            // Отслеживаем движение мыши
+            let mouseX = window.innerWidth / 2;
+            let mouseY = window.innerHeight / 2;
+
+            // Обновление позиции курсора
             document.addEventListener('mousemove', (e) => {
                 mouseX = e.clientX;
                 mouseY = e.clientY;
-                follower.style.left = `${mouseX}px`;
-                follower.style.top = `${mouseY}px`;
+                target.style.left = `${mouseX}px`;
+                target.style.top = `${mouseY}px`;
             });
 
-            // Двигаем части хамелеона с задержкой
-            function moveParts() {
-                parts.forEach((part, index) => {
-                    let delay = index * 50; // Задержка для каждой части
-                    setTimeout(() => {
-                        part.style.left = `${mouseX - 10}px`;
-                        part.style.top = `${mouseY - 2.5}px`;
-                        part.style.transform = `rotate(${Math.atan2(mouseY - part.offsetTop, mouseX - part.offsetLeft)}rad)`;
-                    }, delay);
+            // Анимация сегментов
+            function animate() {
+                let prevX = mouseX;
+                let prevY = mouseY;
+
+                segments.forEach((seg, i) => {
+                    const dx = prevX - seg.offsetLeft;
+                    const dy = prevY - seg.offsetTop;
+                    const angle = Math.atan2(dy, dx);
+                    const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 100);
+
+                    seg.style.transform = `rotate(${angle}rad) translateX(${dist}px)`;
+                    prevX = seg.offsetLeft;
+                    prevY = seg.offsetTop;
                 });
-                requestAnimationFrame(moveParts);
+
+                requestAnimationFrame(animate);
             }
 
-            moveParts();
+            animate();
 
-            // При клике открываем сайт
-            follower.addEventListener('click', () => {
-                window.open('https://example.com', '_blank'); // Замени на свой URL
+            // Клик по любому сегменту открывает сайт
+            segments.forEach(seg => {
+                seg.addEventListener('click', () => {
+                    window.open('https://example.com', '_blank'); // Замени на свой URL
+                });
             });
         });
     </script>
