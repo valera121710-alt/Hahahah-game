@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хамелеон из полосок</title>
+    <title>Хамелеон гоняется за курсором</title>
     <style>
         body {
             margin: 0;
@@ -31,6 +31,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             mix-blend-mode: difference;
+            z-index: 100;
         }
     </style>
 </head>
@@ -40,10 +41,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             const target = document.getElementById('target');
             const segments = [];
-            const numSegments = 12; // Количество сегментов тела хамелеона
+            const numSegments = 12;
             const colors = [];
-
-            // Генерация цветов от зелёного к жёлтому и синему
+            const segmentPositions = Array(numSegments).fill().map(() => ({ x: 0, y: 0 }));
+            
+            // Генерация цветов для сегментов
             for (let i = 0; i < numSegments; i++) {
                 const hue = (120 + i * 15) % 360;
                 colors.push(`hsl(${hue}, 100%, 50%)`);
@@ -56,6 +58,12 @@
                 seg.style.backgroundColor = colors[i];
                 document.body.appendChild(seg);
                 segments.push(seg);
+                
+                // Начальная позиция в центре экрана
+                segmentPositions[i] = {
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2
+                };
             }
 
             let mouseX = window.innerWidth / 2;
@@ -69,22 +77,58 @@
                 target.style.top = `${mouseY}px`;
             });
 
-            // Анимация сегментов
+            // Анимация движения сегментов
             function animate() {
-                let prevX = mouseX;
-                let prevY = mouseY;
-
+                // Обновляем позицию первого сегмента (головы)
+                const head = segmentPositions[0];
+                const dx = mouseX - head.x;
+                const dy = mouseY - head.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Скорость движения зависит от расстояния до курсора
+                const speed = Math.min(10, distance / 10);
+                
+                if (distance > 2) {
+                    head.x += (dx / distance) * speed;
+                    head.y += (dy / distance) * speed;
+                }
+                
+                // Обновляем позиции остальных сегментов
+                for (let i = 1; i < numSegments; i++) {
+                    const prev = segmentPositions[i - 1];
+                    const current = segmentPositions[i];
+                    
+                    const dx = prev.x - current.x;
+                    const dy = prev.y - current.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Сохраняем расстояние между сегментами
+                    const targetDistance = 30;
+                    
+                    if (distance > targetDistance) {
+                        current.x += (dx / distance) * (distance - targetDistance) * 0.4;
+                        current.y += (dy / distance) * (distance - targetDistance) * 0.4;
+                    }
+                }
+                
+                // Визуализируем сегменты
                 segments.forEach((seg, i) => {
-                    const dx = prevX - seg.offsetLeft;
-                    const dy = prevY - seg.offsetTop;
-                    const angle = Math.atan2(dy, dx);
-                    const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 100);
-
-                    seg.style.transform = `rotate(${angle}rad) translateX(${dist}px)`;
-                    prevX = seg.offsetLeft;
-                    prevY = seg.offsetTop;
+                    const pos = segmentPositions[i];
+                    seg.style.left = `${pos.x}px`;
+                    seg.style.top = `${pos.y}px`;
+                    
+                    // Поворачиваем сегмент в направлении движения
+                    if (i > 0) {
+                        const prevPos = segmentPositions[i - 1];
+                        const angle = Math.atan2(prevPos.y - pos.y, prevPos.x - pos.x);
+                        seg.style.transform = `rotate(${angle}rad)`;
+                    } else {
+                        // Для головы используем направление к курсору
+                        const angle = Math.atan2(mouseY - pos.y, mouseX - pos.x);
+                        seg.style.transform = `rotate(${angle}rad)`;
+                    }
                 });
-
+                
                 requestAnimationFrame(animate);
             }
 
@@ -92,8 +136,9 @@
 
             // Клик по любому сегменту открывает сайт
             segments.forEach(seg => {
+                seg.style.cursor = 'pointer';
                 seg.addEventListener('click', () => {
-                    window.open('https://example.com', '_blank'); // Замени на свой URL
+                    window.open('https://example.com', '_blank'); // Замени на нужный URL
                 });
             });
         });
