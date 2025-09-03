@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хамелеон из полосок</title>
+    <title>Хамелеон-преследователь | v2.0</title>
     <style>
         body {
             margin: 0;
@@ -11,6 +11,7 @@
             background: #0a0a0a;
             overflow: hidden;
             cursor: none;
+            font-family: Arial, sans-serif;
         }
 
         .segment {
@@ -20,6 +21,7 @@
             border-radius: 8px;
             transform-origin: center left;
             transition: transform 0.3s ease-out;
+            z-index: 1;
         }
 
         #target {
@@ -33,10 +35,36 @@
             mix-blend-mode: difference;
             z-index: 1000;
         }
+
+        .title {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        
+        .version {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
+    <div class="title">
+        Хамелеон-преследователь
+        <div class="version">v2.0 - Кликни на хамелеона!</div>
+    </div>
+    
     <div id="target"></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const target = document.getElementById('target');
@@ -44,7 +72,7 @@
             const numSegments = 12;
             const colors = [];
             const segmentPositions = Array(numSegments).fill().map(() => ({ x: 0, y: 0 }));
-            const segmentAngles = Array(numSegments).fill(0); // Храним текущие углы
+            const segmentAngles = Array(numSegments).fill(0);
 
             // Генерация цветов
             for (let i = 0; i < numSegments; i++) {
@@ -78,7 +106,7 @@
                 target.style.top = `${mouseY}px`;
             });
 
-            // Нормализация угла (убирает скачки при переходе через 360°)
+            // Нормализация угла
             function normalizeAngle(angle) {
                 while (angle > Math.PI) angle -= 2 * Math.PI;
                 while (angle < -Math.PI) angle += 2 * Math.PI;
@@ -130,7 +158,7 @@
             segments.forEach(seg => {
                 seg.style.cursor = 'pointer';
                 seg.addEventListener('click', () => {
-                    window.open('https://example.com', '_blank');
+                    window.open('https://github.com', '_blank'); // Изменил на GitHub
                 });
             });
         });
