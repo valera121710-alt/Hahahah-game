@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хамелеон-преследователь | v2.0</title>
+    <title>Хамелеон-преследователь | v3.0</title>
     <style>
         body {
             margin: 0;
@@ -19,8 +19,8 @@
             width: 40px;
             height: 15px;
             border-radius: 8px;
-            transform-origin: center left;
-            transition: transform 0.3s ease-out;
+            transform-origin: left center;
+            transition: transform 0.2s ease-out;
             z-index: 1;
         }
 
@@ -60,7 +60,7 @@
 <body>
     <div class="title">
         Хамелеон-преследователь
-        <div class="version">v2.0 - Кликни на хамелеона!</div>
+        <div class="version">v3.0 - Фикс поворотов!</div>
     </div>
     
     <div id="target"></div>
@@ -72,7 +72,7 @@
             const numSegments = 12;
             const colors = [];
             const segmentPositions = Array(numSegments).fill().map(() => ({ x: 0, y: 0 }));
-            const segmentAngles = Array(numSegments).fill(0);
+            const segmentTargets = Array(numSegments).fill().map(() => ({ x: 0, y: 0 }));
 
             // Генерация цветов
             for (let i = 0; i < numSegments; i++) {
@@ -89,10 +89,10 @@
                 segments.push(seg);
                 
                 // Начальная позиция в центре экрана
-                segmentPositions[i] = {
-                    x: window.innerWidth / 2,
-                    y: window.innerHeight / 2
-                };
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                segmentPositions[i] = { x: centerX, y: centerY };
+                segmentTargets[i] = { x: centerX, y: centerY };
             }
 
             let mouseX = window.innerWidth / 2;
@@ -106,47 +106,45 @@
                 target.style.top = `${mouseY}px`;
             });
 
-            // Нормализация угла
-            function normalizeAngle(angle) {
-                while (angle > Math.PI) angle -= 2 * Math.PI;
-                while (angle < -Math.PI) angle += 2 * Math.PI;
-                return angle;
+            // Функция для вычисления расстояния между точками
+            function distance(x1, y1, x2, y2) {
+                return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
             }
 
             // Анимация сегментов с плавным перемещением
             function animate() {
                 // Первый сегмент следует за курсором
-                segmentPositions[0].x += (mouseX - segmentPositions[0].x) * 0.2;
-                segmentPositions[0].y += (mouseY - segmentPositions[0].y) * 0.2;
+                segmentTargets[0].x = mouseX;
+                segmentTargets[0].y = mouseY;
 
                 // Остальные сегменты следуют за предыдущими
                 for (let i = 1; i < numSegments; i++) {
-                    segmentPositions[i].x += (segmentPositions[i-1].x - segmentPositions[i].x) * 0.2;
-                    segmentPositions[i].y += (segmentPositions[i-1].y - segmentPositions[i].y) * 0.2;
+                    segmentTargets[i].x = segmentPositions[i-1].x;
+                    segmentTargets[i].y = segmentPositions[i-1].y;
                 }
 
                 // Обновление позиции и вращения сегментов
                 segments.forEach((seg, i) => {
-                    const dx = segmentPositions[i].x - seg.offsetLeft;
-                    const dy = segmentPositions[i].y - seg.offsetTop;
+                    // Плавное перемещение к цели
+                    segmentPositions[i].x += (segmentTargets[i].x - segmentPositions[i].x) * 0.2;
+                    segmentPositions[i].y += (segmentTargets[i].y - segmentPositions[i].y) * 0.2;
                     
-                    // Вычисляем целевой угол
-                    let targetAngle = Math.atan2(dy, dx);
-                    
-                    // Нормализуем угол для плавного перехода
-                    targetAngle = normalizeAngle(targetAngle);
-                    segmentAngles[i] = normalizeAngle(segmentAngles[i]);
-                    
-                    // Плавно интерполируем угол
-                    let angleDiff = targetAngle - segmentAngles[i];
-                    angleDiff = normalizeAngle(angleDiff);
-                    segmentAngles[i] += angleDiff * 0.2;
-                    segmentAngles[i] = normalizeAngle(segmentAngles[i]);
-                    
-                    // Устанавливаем позицию и поворот
+                    // Устанавливаем позицию
                     seg.style.left = `${segmentPositions[i].x}px`;
                     seg.style.top = `${segmentPositions[i].y}px`;
-                    seg.style.transform = `rotate(${segmentAngles[i]}rad)`;
+                    
+                    // Вычисляем угол поворота
+                    if (i > 0) {
+                        const dx = segmentPositions[i-1].x - segmentPositions[i].x;
+                        const dy = segmentPositions[i-1].y - segmentPositions[i].y;
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                        seg.style.transform = `rotate(${angle}deg)`;
+                    } else {
+                        const dx = mouseX - segmentPositions[i].x;
+                        const dy = mouseY - segmentPositions[i].y;
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                        seg.style.transform = `rotate(${angle}deg)`;
+                    }
                 });
 
                 requestAnimationFrame(animate);
@@ -158,7 +156,7 @@
             segments.forEach(seg => {
                 seg.style.cursor = 'pointer';
                 seg.addEventListener('click', () => {
-                    window.open('https://github.com', '_blank'); // Изменил на GitHub
+                    window.open('https://github.com', '_blank');
                 });
             });
         });
