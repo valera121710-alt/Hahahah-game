@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хамелеон-преследователь | v3.0</title>
+    <title>Хамелеон-преследователь | v4.0</title>
     <style>
         body {
             margin: 0;
@@ -60,7 +60,7 @@
 <body>
     <div class="title">
         Хамелеон-преследователь
-        <div class="version">v3.0 - Фикс поворотов!</div>
+        <div class="version">v4.0 - Плавные повороты!</div>
     </div>
     
     <div id="target"></div>
@@ -72,7 +72,7 @@
             const numSegments = 12;
             const colors = [];
             const segmentPositions = Array(numSegments).fill().map(() => ({ x: 0, y: 0 }));
-            const segmentTargets = Array(numSegments).fill().map(() => ({ x: 0, y: 0 }));
+            const segmentAngles = Array(numSegments).fill(0); // храним текущий угол в радианах
 
             // Генерация цветов
             for (let i = 0; i < numSegments; i++) {
@@ -92,7 +92,6 @@
                 const centerX = window.innerWidth / 2;
                 const centerY = window.innerHeight / 2;
                 segmentPositions[i] = { x: centerX, y: centerY };
-                segmentTargets[i] = { x: centerX, y: centerY };
             }
 
             let mouseX = window.innerWidth / 2;
@@ -106,45 +105,49 @@
                 target.style.top = `${mouseY}px`;
             });
 
-            // Функция для вычисления расстояния между точками
-            function distance(x1, y1, x2, y2) {
-                return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            // Функция для вычисления кратчайшей разницы между углами
+            function shortestAngleDelta(current, target) {
+                let delta = target - current;
+                // Нормализуем разницу в диапазон [-PI, PI]
+                if (delta > Math.PI) delta -= 2 * Math.PI;
+                if (delta < -Math.PI) delta += 2 * Math.PI;
+                return delta;
             }
 
             // Анимация сегментов с плавным перемещением
             function animate() {
                 // Первый сегмент следует за курсором
-                segmentTargets[0].x = mouseX;
-                segmentTargets[0].y = mouseY;
+                segmentPositions[0].x += (mouseX - segmentPositions[0].x) * 0.2;
+                segmentPositions[0].y += (mouseY - segmentPositions[0].y) * 0.2;
 
                 // Остальные сегменты следуют за предыдущими
                 for (let i = 1; i < numSegments; i++) {
-                    segmentTargets[i].x = segmentPositions[i-1].x;
-                    segmentTargets[i].y = segmentPositions[i-1].y;
+                    segmentPositions[i].x += (segmentPositions[i-1].x - segmentPositions[i].x) * 0.2;
+                    segmentPositions[i].y += (segmentPositions[i-1].y - segmentPositions[i].y) * 0.2;
                 }
 
                 // Обновление позиции и вращения сегментов
                 segments.forEach((seg, i) => {
-                    // Плавное перемещение к цели
-                    segmentPositions[i].x += (segmentTargets[i].x - segmentPositions[i].x) * 0.2;
-                    segmentPositions[i].y += (segmentTargets[i].y - segmentPositions[i].y) * 0.2;
-                    
                     // Устанавливаем позицию
                     seg.style.left = `${segmentPositions[i].x}px`;
                     seg.style.top = `${segmentPositions[i].y}px`;
                     
-                    // Вычисляем угол поворота
-                    if (i > 0) {
-                        const dx = segmentPositions[i-1].x - segmentPositions[i].x;
-                        const dy = segmentPositions[i-1].y - segmentPositions[i].y;
-                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                        seg.style.transform = `rotate(${angle}deg)`;
+                    // Вычисляем целевой угол
+                    let targetAngle;
+                    if (i === 0) {
+                        // Для головы - угол towards mouse
+                        targetAngle = Math.atan2(mouseY - segmentPositions[i].y, mouseX - segmentPositions[i].x);
                     } else {
-                        const dx = mouseX - segmentPositions[i].x;
-                        const dy = mouseY - segmentPositions[i].y;
-                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                        seg.style.transform = `rotate(${angle}deg)`;
+                        // Для остальных - угол towards previous segment
+                        targetAngle = Math.atan2(segmentPositions[i-1].y - segmentPositions[i].y, segmentPositions[i-1].x - segmentPositions[i].x);
                     }
+                    
+                    // Вычисляем разницу и интерполируем угол
+                    let delta = shortestAngleDelta(segmentAngles[i], targetAngle);
+                    segmentAngles[i] += delta * 0.2;
+                    
+                    // Применяем поворот
+                    seg.style.transform = `rotate(${segmentAngles[i]}rad)`;
                 });
 
                 requestAnimationFrame(animate);
