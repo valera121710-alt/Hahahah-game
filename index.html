@@ -19,7 +19,7 @@
             height: 15px;
             border-radius: 8px;
             transform-origin: center left;
-            transition: transform 0.2s ease-out;
+            transition: transform 0.3s ease-out;
         }
 
         #target {
@@ -44,6 +44,7 @@
             const numSegments = 12;
             const colors = [];
             const segmentPositions = Array(numSegments).fill().map(() => ({ x: 0, y: 0 }));
+            const segmentAngles = Array(numSegments).fill(0); // Храним текущие углы
 
             // Генерация цветов
             for (let i = 0; i < numSegments; i++) {
@@ -77,6 +78,13 @@
                 target.style.top = `${mouseY}px`;
             });
 
+            // Нормализация угла (убирает скачки при переходе через 360°)
+            function normalizeAngle(angle) {
+                while (angle > Math.PI) angle -= 2 * Math.PI;
+                while (angle < -Math.PI) angle += 2 * Math.PI;
+                return angle;
+            }
+
             // Анимация сегментов с плавным перемещением
             function animate() {
                 // Первый сегмент следует за курсором
@@ -93,11 +101,24 @@
                 segments.forEach((seg, i) => {
                     const dx = segmentPositions[i].x - seg.offsetLeft;
                     const dy = segmentPositions[i].y - seg.offsetTop;
-                    const angle = Math.atan2(dy, dx);
                     
+                    // Вычисляем целевой угол
+                    let targetAngle = Math.atan2(dy, dx);
+                    
+                    // Нормализуем угол для плавного перехода
+                    targetAngle = normalizeAngle(targetAngle);
+                    segmentAngles[i] = normalizeAngle(segmentAngles[i]);
+                    
+                    // Плавно интерполируем угол
+                    let angleDiff = targetAngle - segmentAngles[i];
+                    angleDiff = normalizeAngle(angleDiff);
+                    segmentAngles[i] += angleDiff * 0.2;
+                    segmentAngles[i] = normalizeAngle(segmentAngles[i]);
+                    
+                    // Устанавливаем позицию и поворот
                     seg.style.left = `${segmentPositions[i].x}px`;
                     seg.style.top = `${segmentPositions[i].y}px`;
-                    seg.style.transform = `rotate(${angle}rad)`;
+                    seg.style.transform = `rotate(${segmentAngles[i]}rad)`;
                 });
 
                 requestAnimationFrame(animate);
